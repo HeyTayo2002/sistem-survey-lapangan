@@ -133,26 +133,20 @@ elif pilihan_menu == "📷 Berita Acara Survey (Word)":
     lokasi_gps = streamlit_geolocation()
     koordinat_otomatis = ""
     
-    # Jika GPS berhasil terbaca
     if lokasi_gps and lokasi_gps.get('latitude') and lokasi_gps.get('longitude'):
         lat = lokasi_gps['latitude']
         lon = lokasi_gps['longitude']
-        # Mengubah koordinat menjadi link langsung ke Google Maps
         koordinat_otomatis = f"https://maps.google.com/?q={lat},{lon}"
         st.success("✅ Lokasi berhasil ditemukan!")
         
-    # Kolom input yang nilainya akan otomatis terisi oleh GPS (tetap bisa diedit manual)
     koordinat = st.text_input("Hasil Titik Koordinat / Link Maps (Untuk QR Code):", value=koordinat_otomatis, placeholder="Contoh: -6.275, 106.845")
-    # -----------------------------
     
     st.markdown("---")
     
-    # Memilih jumlah halaman yang ingin dibuat
     jumlah_halaman = st.number_input("Berapa lembar halaman foto yang dibutuhkan?", min_value=1, max_value=5, value=1, step=1)
     
     data_halaman = []
     
-    # Loop untuk membuat form sesuai jumlah halaman
     for i in range(jumlah_halaman):
         st.markdown(f"### 📑 Halaman {i+1}")
         
@@ -170,14 +164,14 @@ elif pilihan_menu == "📷 Berita Acara Survey (Word)":
             "foto_g": foto_galeri,
             "foto_k": foto_kamera
         })
-        st.write("") # Memberi jarak visual
+        st.write("") 
 
     st.markdown("---")
     
     if st.button("📄 Buat Dokumen Word"):
         doc = Document()
         
-        # Pengaturan Font Default (Arial, 11)
+        # Pengaturan Font Default (Arial, 11) untuk teks biasa
         style = doc.styles['Normal']
         font = style.font
         font.name = 'Arial'
@@ -191,11 +185,13 @@ elif pilihan_menu == "📷 Berita Acara Survey (Word)":
             if idx > 0:
                 doc.add_page_break()
                 
-            # A. Mencetak Judul Halaman
+            # A. Mencetak Judul Halaman (Arial, 14, Bold)
             p_judul = doc.add_paragraph()
             p_judul.alignment = WD_ALIGN_PARAGRAPH.CENTER
             run_judul = p_judul.add_run(halaman["judul"])
             run_judul.bold = True
+            run_judul.font.name = 'Arial'
+            run_judul.font.size = Pt(14)
             
             # B. Mencetak Foto (6x8 cm, jeda presisi)
             p_foto = doc.add_paragraph()
@@ -211,9 +207,9 @@ elif pilihan_menu == "📷 Berita Acara Survey (Word)":
                     
                     posisi = j + 1
                     if posisi % 2 != 0 and posisi < len(semua_foto):
-                        run_foto.add_text("    ") # 4 Spasi untuk foto berdampingan
+                        run_foto.add_text("    ") 
                     elif posisi % 2 == 0 and posisi < len(semua_foto):
-                        run_foto.add_text("\n\n") # 2x Enter untuk baris baru
+                        run_foto.add_text("\n\n") 
             
             # C. Mencetak QR Code & Alamat (HANYA DITAMPILKAN DI HALAMAN 1)
             if idx == 0:
@@ -233,9 +229,12 @@ elif pilihan_menu == "📷 Berita Acara Survey (Word)":
                     run_qr.add_picture(qr_stream, width=Cm(5), height=Cm(5))
                     
                 if lokasi_teks:
+                    # Mencetak Alamat Manual (Arial, 12, Regular)
                     p_alamat = doc.add_paragraph()
                     p_alamat.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                    p_alamat.add_run(lokasi_teks)
+                    run_alamat = p_alamat.add_run(lokasi_teks)
+                    run_alamat.font.name = 'Arial'
+                    run_alamat.font.size = Pt(12)
                     
         # Menyimpan output
         doc_stream = io.BytesIO()
