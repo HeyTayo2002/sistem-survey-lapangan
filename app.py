@@ -3,122 +3,228 @@ import openpyxl
 from openpyxl.styles import PatternFill, Alignment
 import io
 import os
+from docx import Document
+from docx.shared import Cm, Pt
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+import qrcode
+from PIL import Image
 
-# Konfigurasi Halaman
-st.set_page_config(page_title="Form Berita Acara Survey", layout="centered")
+# Konfigurasi Halaman (Harus diletakkan paling atas)
+st.set_page_config(page_title="Aplikasi Survey Lapangan", layout="centered", page_icon="📱")
 
-# 1. Bagian Header & Input Nama Anggota
-st.title("📋 Form Berita Acara Survey")
-st.markdown("### 👤 Informasi Anggota")
-nama_anggota = st.text_input("Nama dan Nomor Anggota", placeholder="Ketik nama dan nomor anggota di sini...")
-st.markdown("---")
+# Membuat Menu Navigasi di Samping (Sidebar)
+st.sidebar.title("📱 Menu Aplikasi")
+pilihan_menu = st.sidebar.radio("Pilih Modul Kerja:", ["📝 Pertanyaan Survey (Excel)", "📷 Berita Acara Survey (Word)"])
 
-st.write("Silakan isi data hasil survey lapangan pada form di bawah ini.")
+# ==========================================
+# MENU 1: PERTANYAAN SURVEY (EXCEL)
+# ==========================================
+if pilihan_menu == "📝 Pertanyaan Survey (Excel)":
+    st.title("📋 Form Pertanyaan Survey")
+    st.markdown("### 👤 Informasi Anggota")
+    nama_anggota = st.text_input("Nama dan Nomor Anggota", placeholder="Ketik nama dan nomor anggota di sini...")
+    st.markdown("---")
 
-# Pastikan nama file sesuai dengan file Anda
-file_template = "Template_Survey.xlsx" 
+    file_template = "Template_Survey.xlsx" 
 
-if not os.path.exists(file_template):
-    st.error(f"⚠️ File '{file_template}' tidak ditemukan! Mohon masukkan file Excel tersebut ke dalam folder yang sama.")
-else:
-    wb = openpyxl.load_workbook(file_template)
-    sheet = wb.active
-    
-    jawaban_user = {}
-    sel_warna_input = [] # Menyimpan daftar kotak input (kuning & hijau)
-    
-    # Membaca Form mulai baris ke-4
-    for row in range(4, sheet.max_row + 1):
-        kategori = sheet.cell(row=row, column=3).value
-        pertanyaan = sheet.cell(row=row, column=4).value
-        sel_jawaban = sheet.cell(row=row, column=5)
+    if not os.path.exists(file_template):
+        st.error(f"⚠️ File '{file_template}' tidak ditemukan di sistem.")
+    else:
+        wb = openpyxl.load_workbook(file_template)
+        sheet = wb.active
         
-        if type(sel_jawaban).__name__ == 'MergedCell':
-            continue
-            
-        nilai_bawaan = sel_jawaban.value
-        warna_sel = sel_jawaban.fill.start_color if sel_jawaban.fill else None
+        jawaban_user = {}
+        sel_warna_input = [] 
         
-        if kategori and isinstance(kategori, str) and kategori.strip() != "":
-            st.markdown(f"<br>### 📌 {kategori.upper()}", unsafe_allow_html=True)
+        for row in range(4, sheet.max_row + 1):
+            kategori = sheet.cell(row=row, column=3).value
+            pertanyaan = sheet.cell(row=row, column=4).value
+            sel_jawaban = sheet.cell(row=row, column=5)
             
-        if pertanyaan and isinstance(pertanyaan, str) and pertanyaan.strip() != "":
-            is_yellow = False
-            is_green = False
+            if type(sel_jawaban).__name__ == 'MergedCell':
+                continue
+                
+            nilai_bawaan = sel_jawaban.value
+            warna_sel = sel_jawaban.fill.start_color if sel_jawaban.fill else None
             
-            if warna_sel and warna_sel.type == 'theme':
-                if warna_sel.theme == 7:
-                    is_yellow = True
-                    sel_warna_input.append(sel_jawaban)
-                elif warna_sel.theme == 9:
-                    is_green = True
-                    sel_warna_input.append(sel_jawaban)
-                    
-            if is_green and isinstance(nilai_bawaan, str):
-                pilihan_mentah = nilai_bawaan.split('/')
-                pilihan_bersih = [p.strip() for p in pilihan_mentah if p.strip()] 
-                pilihan_bersih.insert(0, "- Pilih Salah Satu -")
+            if kategori and isinstance(kategori, str) and kategori.strip() != "":
+                st.markdown(f"<br>### 📌 {kategori.upper()}", unsafe_allow_html=True)
                 
-                jawaban = st.selectbox(label=pertanyaan, options=pilihan_bersih, key=f"baris_{row}")
-                if jawaban != "- Pilih Salah Satu -":
-                    jawaban_user[row] = jawaban
-                    
-            elif is_yellow:
-                teks_petunjuk = str(nilai_bawaan).strip() if nilai_bawaan else ""
-                jawaban = st.text_input(label=pertanyaan, placeholder=teks_petunjuk, key=f"baris_{row}")
-                if jawaban:
-                    jawaban_user[row] = jawaban
-            else:
-                st.markdown(f"**{pertanyaan}**")
+            if pertanyaan and isinstance(pertanyaan, str) and pertanyaan.strip() != "":
+                is_yellow = False
+                is_green = False
                 
+                if warna_sel and warna_sel.type == 'theme':
+                    if warna_sel.theme == 7:
+                        is_yellow = True
+                        sel_warna_input.append(sel_jawaban)
+                    elif warna_sel.theme == 9:
+                        is_green = True
+                        sel_warna_input.append(sel_jawaban)
+                        
+                if is_green and isinstance(nilai_bawaan, str):
+                    pilihan_mentah = nilai_bawaan.split('/')
+                    pilihan_bersih = [p.strip() for p in pilihan_mentah if p.strip()] 
+                    pilihan_bersih.insert(0, "- Pilih Salah Satu -")
+                    jawaban = st.selectbox(label=pertanyaan, options=pilihan_bersih, key=f"baris_{row}")
+                    if jawaban != "- Pilih Salah Satu -":
+                        jawaban_user[row] = jawaban
+                        
+                elif is_yellow:
+                    teks_petunjuk = str(nilai_bawaan).strip() if nilai_bawaan else ""
+                    jawaban = st.text_input(label=pertanyaan, placeholder=teks_petunjuk, key=f"baris_{row}")
+                    if jawaban:
+                        jawaban_user[row] = jawaban
+                else:
+                    st.markdown(f"**{pertanyaan}**")
+                    
+        st.markdown("---")
+        
+        if st.button("💾 Simpan Data & Buat Excel"):
+            no_fill = PatternFill(fill_type=None)
+            for row, isi_jawaban in jawaban_user.items():
+                sel = sheet.cell(row=row, column=5)
+                sel.value = isi_jawaban
+                
+            for sel in sel_warna_input:
+                sel.fill = no_fill
+                
+            cell_b2 = sheet.cell(row=2, column=2)
+            nama_bersih = nama_anggota.strip() if nama_anggota else "Tanpa_Nama"
+            cell_b2.value = f"Berita Acara Survey : {nama_bersih}"
+            cell_b2.fill = no_fill  
+            
+            sheet.merge_cells(start_row=2, start_column=2, end_row=2, end_column=6)
+            cell_b2.alignment = Alignment(horizontal='center', vertical='center')
+                        
+            for r in range(1, sheet.max_row + 1):
+                sheet.row_dimensions[r].height = 30.05
+            if sheet.max_row >= 1:
+                sheet.row_dimensions[1].height = 13.05
+            if sheet.max_row >= 86:
+                sheet.row_dimensions[86].height = 13.05
+                    
+            output = io.BytesIO()
+            wb.save(output)
+            excel_data = output.getvalue()
+            
+            nama_file_aman = "".join(c for c in nama_bersih if c.isalnum() or c in (' ', '_', '-')).strip()
+            nama_file_final = f"Pertanyaan Survey {nama_file_aman}.xlsx"
+            
+            st.success(f"✅ Excel Siap! Nama File: **{nama_file_final}**")
+            st.download_button(label="📥 Unduh File Excel", data=excel_data, file_name=nama_file_final, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+# ==========================================
+# MENU 2: BERITA ACARA SURVEY (WORD DINAMIS)
+# ==========================================
+elif pilihan_menu == "📷 Berita Acara Survey (Word)":
+    st.title("📷 Form Berita Acara & Lampiran Foto")
+    st.write("Sistem otomatis penggabungan foto ke format Word multihalaman.")
+    
+    nama_nasabah = st.text_input("Nama Anggota (Untuk penamaan file)", placeholder="Contoh: Budi Santoso")
+    lokasi_teks = st.text_area("Alamat Lengkap (Ditampilkan di Halaman 1)", placeholder="Contoh: Jl. Tembakau 3 No.19 RT.02/01...")
+    koordinat = st.text_input("Titik Koordinat / Link Maps (Untuk QR Code)", placeholder="Contoh: -6.275, 106.845")
+    
     st.markdown("---")
     
-    # Tombol Eksekusi
-    if st.button("💾 Simpan Data & Buat Excel"):
-        no_fill = PatternFill(fill_type=None)
+    # Memilih jumlah halaman yang ingin dibuat
+    jumlah_halaman = st.number_input("Berapa lembar halaman foto yang dibutuhkan?", min_value=1, max_value=5, value=1, step=1)
+    
+    data_halaman = []
+    
+    # Loop untuk membuat form sesuai jumlah halaman
+    for i in range(jumlah_halaman):
+        st.markdown(f"### 📑 Halaman {i+1}")
         
-        # 1. Masukkan jawaban & Hapus warna (Hanya pada kotak input kuning & hijau)
-        for row, isi_jawaban in jawaban_user.items():
-            sel = sheet.cell(row=row, column=5)
-            sel.value = isi_jawaban
-            
-        for sel in sel_warna_input:
-            sel.fill = no_fill
-            
-        # 2. Menggabungkan teks "Berita Acara Survey : " + Nama Anggota ke Kolom B2
-        cell_b2 = sheet.cell(row=2, column=2)
-        # Jika kolom nama kosong, beri teks aman agar tidak error
-        nama_bersih = nama_anggota.strip() if nama_anggota else "Tanpa_Nama"
-        cell_b2.value = f"Berita Acara Survey : {nama_bersih}"
-        cell_b2.fill = no_fill  
+        # Judul default untuk Halaman 1 adalah "FOTO RUMAH YBS", sisanya bisa diubah
+        judul_default = "FOTO RUMAH YBS" if i == 0 else f"FOTO TAMBAHAN {i+1}"
+        judul_halaman = st.text_input(f"Judul Halaman {i+1}", value=judul_default, key=f"judul_{i}")
         
-        # Merge & Center dari Kolom B2 sampai Kolom F2
-        sheet.merge_cells(start_row=2, start_column=2, end_row=2, end_column=6)
-        cell_b2.alignment = Alignment(horizontal='center', vertical='center')
-                    
-        # 3. Mengatur Tinggi Baris (Row Height)
-        for r in range(1, sheet.max_row + 1):
-            sheet.row_dimensions[r].height = 30.05
+        tab1, tab2 = st.tabs(["📁 Pilih dari Galeri", "📸 Gunakan Kamera"])
+        with tab1:
+            foto_galeri = st.file_uploader(f"Pilih minimal 2 foto untuk {judul_halaman}", type=['jpg', 'jpeg', 'png'], accept_multiple_files=True, key=f"galeri_{i}")
+        with tab2:
+            foto_kamera = st.camera_input(f"Kamera untuk {judul_halaman}", key=f"kamera_{i}")
             
-        if sheet.max_row >= 1:
-            sheet.row_dimensions[1].height = 13.05
-        if sheet.max_row >= 86:
-            sheet.row_dimensions[86].height = 13.05
+        data_halaman.append({
+            "judul": judul_halaman,
+            "foto_g": foto_galeri,
+            "foto_k": foto_kamera
+        })
+        st.write("") # Memberi jarak visual
+
+    st.markdown("---")
+    
+    if st.button("📄 Buat Dokumen Word"):
+        doc = Document()
+        
+        # Pengaturan Font Default (Arial, 11)
+        style = doc.styles['Normal']
+        font = style.font
+        font.name = 'Arial'
+        font.size = Pt(11)
+        
+        for idx, halaman in enumerate(data_halaman):
+            semua_foto = halaman["foto_g"] if halaman["foto_g"] else []
+            if halaman["foto_k"]:
+                semua_foto.append(halaman["foto_k"])
                 
-        # 4. Menyimpan output dengan nama file dinamis sesuai permintaan
-        output = io.BytesIO()
-        wb.save(output)
-        excel_data = output.getvalue()
+            # Jika ini bukan halaman pertama, tambahkan Page Break (Lembar Baru)
+            if idx > 0:
+                doc.add_page_break()
+                
+            # A. Mencetak Judul Halaman
+            p_judul = doc.add_paragraph()
+            p_judul.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            run_judul = p_judul.add_run(halaman["judul"])
+            run_judul.bold = True
+            
+            # B. Mencetak Foto (6x8 cm, jeda presisi)
+            p_foto = doc.add_paragraph()
+            p_foto.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            
+            if len(semua_foto) == 0:
+                p_foto.add_run("*(Tidak ada foto yang dilampirkan pada halaman ini)*")
+            else:
+                for j, foto in enumerate(semua_foto):
+                    img_stream = io.BytesIO(foto.read())
+                    run_foto = p_foto.add_run()
+                    run_foto.add_picture(img_stream, width=Cm(6), height=Cm(8))
+                    
+                    posisi = j + 1
+                    if posisi % 2 != 0 and posisi < len(semua_foto):
+                        run_foto.add_text("    ") # 4 Spasi untuk foto berdampingan
+                    elif posisi % 2 == 0 and posisi < len(semua_foto):
+                        run_foto.add_text("\n\n") # 2x Enter untuk baris baru
+            
+            # C. Mencetak QR Code & Alamat (HANYA DITAMPILKAN DI HALAMAN 1)
+            if idx == 0:
+                if koordinat:
+                    qr = qrcode.QRCode(box_size=10, border=2)
+                    qr.add_data(koordinat)
+                    qr.make(fit=True)
+                    img_qr = qr.make_image(fill_color="black", back_color="white")
+                    
+                    qr_stream = io.BytesIO()
+                    img_qr.save(qr_stream, format="PNG")
+                    qr_stream.seek(0)
+                    
+                    p_qr = doc.add_paragraph()
+                    p_qr.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    run_qr = p_qr.add_run()
+                    run_qr.add_picture(qr_stream, width=Cm(5), height=Cm(5))
+                    
+                if lokasi_teks:
+                    p_alamat = doc.add_paragraph()
+                    p_alamat.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    p_alamat.add_run(lokasi_teks)
+                    
+        # Menyimpan output
+        doc_stream = io.BytesIO()
+        doc.save(doc_stream)
+        doc_data = doc_stream.getvalue()
         
-        # Membuat nama file otomatis ("Pertanyaan Survey [Nama].xlsx")
-        nama_file_aman = "".join(c for c in nama_bersih if c.isalnum() or c in (' ', '_', '-')).strip()
-        nama_file_final = f"Pertanyaan Survey {nama_file_aman}.xlsx"
+        nama_file_word = f"Berita Acara Survey {nama_nasabah}.docx" if nama_nasabah else "Berita_Acara_Survey.docx"
         
-        st.success(f"✅ Berhasil! File siap diunduh dengan nama: **{nama_file_final}**")
-        
-        st.download_button(
-            label="📥 Unduh File Excel Final",
-            data=excel_data,
-            file_name=nama_file_final,
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+        st.success(f"✅ Dokumen Word Multihalaman Siap! Nama File: **{nama_file_word}**")
+        st.download_button(label="📥 Unduh File Word", data=doc_data, file_name=nama_file_word, mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
