@@ -171,6 +171,12 @@ elif pilihan_menu == "📷 Berita Acara Survey (Word)":
     if st.button("📄 Buat Dokumen Word"):
         doc = Document()
         
+        # --- PENGATURAN UKURAN KERTAS FOLIO / F4 ---
+        # Folio = 8.5 x 13 inches (21.59 cm x 33.02 cm)
+        for section in doc.sections:
+            section.page_width = Cm(21.59)
+            section.page_height = Cm(33.02)
+        
         # Pengaturan Font Default (Arial, 11) untuk teks biasa
         style = doc.styles['Normal']
         font = style.font
@@ -243,5 +249,5 @@ elif pilihan_menu == "📷 Berita Acara Survey (Word)":
         
         nama_file_word = f"Berita Acara Survey {nama_nasabah}.docx" if nama_nasabah else "Berita_Acara_Survey.docx"
         
-        st.success(f"✅ Dokumen Word Multihalaman Siap! Nama File: **{nama_file_word}**")
+        st.success(f"✅ Dokumen Word (Kertas Folio) Siap! Nama File: **{nama_file_word}**")
         st.download_button(label="📥 Unduh File Word", data=doc_data, file_name=nama_file_word, mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
