@@ -8,6 +8,7 @@ from docx.shared import Cm, Pt
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 import qrcode
 from PIL import Image
+from streamlit_geolocation import streamlit_geolocation
 
 # Konfigurasi Halaman (Harus diletakkan paling atas)
 st.set_page_config(page_title="Aplikasi Survey Lapangan", layout="centered", page_icon="📱")
@@ -123,7 +124,26 @@ elif pilihan_menu == "📷 Berita Acara Survey (Word)":
     
     nama_nasabah = st.text_input("Nama Anggota (Untuk penamaan file)", placeholder="Contoh: Budi Santoso")
     lokasi_teks = st.text_area("Alamat Lengkap (Ditampilkan di Halaman 1)", placeholder="Contoh: Jl. Tembakau 3 No.19 RT.02/01...")
-    koordinat = st.text_input("Titik Koordinat / Link Maps (Untuk QR Code)", placeholder="Contoh: -6.275, 106.845")
+    
+    # --- FITUR LOKASI OTOMATIS ---
+    st.markdown("---")
+    st.write("### 📍 Titik Lokasi / Koordinat")
+    st.write("Ketuk tombol **'Get Location'** di bawah ini untuk mengambil titik GPS otomatis. *(Pastikan browser HP Anda diizinkan mengakses lokasi)*")
+    
+    lokasi_gps = streamlit_geolocation()
+    koordinat_otomatis = ""
+    
+    # Jika GPS berhasil terbaca
+    if lokasi_gps and lokasi_gps.get('latitude') and lokasi_gps.get('longitude'):
+        lat = lokasi_gps['latitude']
+        lon = lokasi_gps['longitude']
+        # Mengubah koordinat menjadi link langsung ke Google Maps
+        koordinat_otomatis = f"https://maps.google.com/?q={lat},{lon}"
+        st.success("✅ Lokasi berhasil ditemukan!")
+        
+    # Kolom input yang nilainya akan otomatis terisi oleh GPS (tetap bisa diedit manual)
+    koordinat = st.text_input("Hasil Titik Koordinat / Link Maps (Untuk QR Code):", value=koordinat_otomatis, placeholder="Contoh: -6.275, 106.845")
+    # -----------------------------
     
     st.markdown("---")
     
@@ -136,7 +156,6 @@ elif pilihan_menu == "📷 Berita Acara Survey (Word)":
     for i in range(jumlah_halaman):
         st.markdown(f"### 📑 Halaman {i+1}")
         
-        # Judul default untuk Halaman 1 adalah "FOTO RUMAH YBS", sisanya bisa diubah
         judul_default = "FOTO RUMAH YBS" if i == 0 else f"FOTO TAMBAHAN {i+1}"
         judul_halaman = st.text_input(f"Judul Halaman {i+1}", value=judul_default, key=f"judul_{i}")
         
@@ -169,7 +188,6 @@ elif pilihan_menu == "📷 Berita Acara Survey (Word)":
             if halaman["foto_k"]:
                 semua_foto.append(halaman["foto_k"])
                 
-            # Jika ini bukan halaman pertama, tambahkan Page Break (Lembar Baru)
             if idx > 0:
                 doc.add_page_break()
                 
