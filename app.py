@@ -213,9 +213,9 @@ elif pilihan_menu == "📷 Berita Acara Survey (Word)":
                     
                     posisi = j + 1
                     if posisi % 2 != 0 and posisi < len(semua_foto):
-                        run_foto.add_text("    ") 
+                        run_foto.add_text("    ") # 4 Spasi untuk menyamping
                     elif posisi % 2 == 0 and posisi < len(semua_foto):
-                        run_foto.add_text("\n\n") 
+                        run_foto.add_text("\n") # 1x Enter untuk baris baru ke bawah (DIUBAH)
             
             # C. Mencetak QR Code & Alamat (HANYA DITAMPILKAN DI HALAMAN 1)
             if idx == 0:
