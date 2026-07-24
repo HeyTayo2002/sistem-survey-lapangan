@@ -11,8 +11,7 @@ from PIL import Image
 from streamlit_geolocation import streamlit_geolocation
 
 # Konfigurasi Halaman (Harus diletakkan paling atas)
-st.set_page_config(page_title="Aplikasi Survey Lapangan", layout="centered", page_icon="📱")
-
+st.set_page_config(page_title="Survey Kopdit Sehati", layout="centered", page_icon="logo_sehati.png")
 # Membuat Menu Navigasi di Samping (Sidebar)
 st.sidebar.title("📱 Menu Aplikasi")
 pilihan_menu = st.sidebar.radio("Pilih Modul Kerja:", ["📝 Pertanyaan Survey (Excel)", "📷 Berita Acara Survey (Word)"])
